@@ -79,7 +79,7 @@ export default class TreeStore implements ITreeStore {
     for(const removeId of itemsToRemove) {
       const item = map.get(removeId)
       if (item !== undefined) {
-        this.state.splice(item.index + --shift, 1)
+        this.state.splice(item.index + shift--, 1)
       }
     }
 
