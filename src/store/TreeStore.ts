@@ -1,12 +1,12 @@
-type TId = string|number
+export type TId = string|number
 
-interface TItem {
+export interface TItem {
   id: TId,
   parent?: string|number|null,
   label: string
 }
 
-type TStateMap = Map<TId, {
+export type TStateMap = Map<TId, {
   id: TId,
   index: number
 }>
@@ -27,7 +27,7 @@ export default class TreeStore implements ITreeStore {
   private indexMap: TStateMap
   private mapOutdated:boolean = true
 
-  constructor(data:TItem[]) {
+  constructor(data: TItem[]) {
     this.state = this.deepClone(data)
     this.indexMap = new Map()
     this.validateState()
