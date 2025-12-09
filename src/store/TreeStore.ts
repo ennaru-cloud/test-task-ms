@@ -1,5 +1,4 @@
 type TId = string|number
-type TState = TItem[]
 
 interface TItem {
   id: TId,
@@ -19,6 +18,7 @@ interface ITreeStore {
   getAllChildren(id:TId): TItem[]
   getAllParents(id:TId): TItem[]
   addItem(data:object): void
+  updateItem(data:object): void
   removeItem(id:TId): void
 }
 export default class TreeStore implements ITreeStore {
@@ -39,25 +39,19 @@ export default class TreeStore implements ITreeStore {
 
   public getItem(id:TId):TItem|undefined {
     const item = this.map().get(id)
-    return item !== undefined ? this.state[item.index] : undefined
+    return item !== undefined ? this.deepClone(this.state[item.index]) : undefined
   }
 
   public getChildren(id:TId):TItem[] {
-    return this.state.filter((item) => item.parent === id)
+    return this.deepClone(this.state.filter((item) => item.parent === id))
   }
 
-  public getAllChildren(id:TId, skip:Set<TId> = new Set()):TItem[] {
-    if (skip.has(id))
-      return []
-
-    skip.add(id)
-
-    const children = this.getChildren(id)
-    return [...children, ...children.flatMap(({ id}) => this.getAllChildren(id, skip))]
+  public getAllChildren(id:TId):TItem[] {
+    return this.deepClone(this.collectChildren(id))
   }
 
   public getAllParents(id:TId):TItem[] {
-    const result = []
+    const result:TItem[] = []
     const item = this.getItem(id)
     if (item) {
       result.push(item)
@@ -67,23 +61,34 @@ export default class TreeStore implements ITreeStore {
         parent = this.getParent(parent.id)
       }
     }
-    return result as TItem[]
+    return this.deepClone(result as TItem[])
   }
 
-  public addItem(data:TItem):void {
-    if (this.guardItem(data) && !this.getItem(data.id)) {
-      this.state.push({ ...data })
+  public addItem(data:object):void {
+    if (this.guardItem(data) && !this.getItem((data as TItem).id)) {
+      this.state.push({ ...(data as TItem) })
+      this.mapOutdated = true
     }
   }
 
   public removeItem(id:TId):void {
-    [id, ...this.getAllChildren(id).map(({ id }) => id)]
-     .forEach((id) => this.removeItemById(id))
+    let shift = 0
+    const map = this.map()
+    const itemsToRemove = [id, ...this.getAllChildren(id).map(({ id }) => id)]
+
+    for(const removeId of itemsToRemove) {
+      const item = map.get(removeId)
+      if (item !== undefined) {
+        this.state.splice(item.index + --shift, 1)
+      }
+    }
+
+    this.mapOutdated = true
   }
 
-  public updateItem(data:TItem):void {
+  public updateItem(data:object):void {
     if (this.guardItem(data)) {
-      const item = this.getItem(data.id)
+      const item = this.getItem((data as TItem).id)
       if (item) {
         const index = this.map().get(item.id)?.index
         if (index !== undefined) {
@@ -151,6 +156,15 @@ export default class TreeStore implements ITreeStore {
     return false
   }
 
+  private collectChildren(id:TId, skip:Set<TId> = new Set()):TItem[] {
+    if (skip.has(id))
+      return []
+    skip.add(id)
+
+    const children = this.getChildren(id)
+
+    return [...children, ...children.flatMap(({ id }) => this.collectChildren(id, skip))]
+  }
 
   private isValidField(field:unknown): field is TId {
     return typeof field === 'string' || typeof field === 'number'
@@ -159,14 +173,6 @@ export default class TreeStore implements ITreeStore {
   private getParent(id:TId):TItem|undefined {
     const parent = this.getItem(id)?.parent
     return parent !== null && parent !== undefined ? this.getItem(parent) : undefined
-  }
-
-  private removeItemById(id:TId):void {
-    const item = this.map().get(id)
-    if (item !== undefined) {
-      this.state.splice(item.index, 1)
-      this.mapOutdated = true
-    }
   }
 
   private validateState() {
@@ -190,7 +196,6 @@ export default class TreeStore implements ITreeStore {
 
     this.indexMap = new Map(this.state.map((item, index) => [item.id, { ...item, index }]))
     this.mapOutdated = false
-    console.log('new MAP')
     return this.indexMap
   }
 
