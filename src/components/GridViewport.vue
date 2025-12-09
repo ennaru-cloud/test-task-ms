@@ -17,15 +17,19 @@ const storage = new TreeStore(props.data as TItem[])
 
 const defaultColDef = ref<ColDef>({ flex: 1 })
 const columnDefs = ref<ColDef[]>([
-  {
-    headerName: '№ п/п',
-    lockPosition: "left",
-    resizable: false,
-    width: 100,
-    flex: 0,
-    cellClass: 'index-cell',
-    valueGetter: ({ node }) => (node?.rowIndex || 0) + 1
-  },
+
+  // In latest version of AgGrid node.rowIndex does not correspond to real row position, so i have to use RowNumbersModule from enterprise lib without changing header text
+
+  // {
+  //   headerName: '№ п/п',
+  //   lockPosition: "left",
+  //   resizable: false,
+  //   width: 100,
+  //   flex: 0,
+  //   cellClass: 'index-cell',
+  //   valueGetter: ({ node }) => (node?.rowIndex || 0) + 1
+  // },
+
   { field: 'label', headerName: 'Наименование', flex: 2, cellDataType: 'string' }
 ])
 const autoGroupColumnDef = ref<ColDef>({
@@ -55,6 +59,7 @@ const getDataPath = ref<GetDataPath>((data:TItem) => storage.getAllParents(data.
     :defaultColDef="defaultColDef"
     :autoGroupColumnDef="autoGroupColumnDef"
     :groupDefaultExpanded="groupDefaultExpanded"
+    rowNumbers
     />
 </template>
 
