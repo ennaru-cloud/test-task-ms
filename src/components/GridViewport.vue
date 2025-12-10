@@ -18,7 +18,7 @@ const storage = new TreeStore(props.data as TItem[])
 const defaultColDef = ref<ColDef>({ flex: 1 })
 const columnDefs = ref<ColDef[]>([
 
-  // In latest version of AgGrid node.rowIndex does not correspond to real row position, so i have to use RowNumbersModule from enterprise lib without changing header text
+  // In latest version of AgGrid node.rowIndex does not correspond to real row position, so I have to use RowNumbersModule from enterprise lib without changing header text
 
   // {
   //   headerName: '№ п/п',
@@ -30,20 +30,20 @@ const columnDefs = ref<ColDef[]>([
   //   valueGetter: ({ node }) => (node?.rowIndex || 0) + 1
   // },
 
-  { field: 'label', headerName: 'Наименование', flex: 2, cellDataType: 'string' }
+  { field: 'label', headerName: 'Наименование', flex: 2, cellDataType: 'string', cellClass: ({ node }) => node?.allChildrenCount ? 'group': 'element', }
 ])
 const autoGroupColumnDef = ref<ColDef>({
   headerName: "Категория",
   sortable: false,
   sort: "asc",
   field: "group",
-  valueGetter: ({ data }) => storage.getChildren(data.id).length ? 'Группа' : 'Элемент',
-  cellClass: ({ value }) => value == 'Группа' ? 'group': 'element',
+  valueGetter: ({ node }) => node?.allChildrenCount ? 'Группа' : 'Элемент',
+  cellClass: ({ node }) => node?.allChildrenCount ? 'group': '',
   cellRendererParams: {
     suppressCount: true,
   },
 });
-const groupDefaultExpanded = ref(-1)
+const groupDefaultExpanded = ref<number>(-1)
 const rowData = computed<TItem[]|null>(() => storage.getAll())
 const getDataPath = ref<GetDataPath>((data:TItem) => storage.getAllParents(data.id).map(({ id }) => id+'').reverse())
 
@@ -83,7 +83,8 @@ const getDataPath = ref<GetDataPath>((data:TItem) => storage.getAllParents(data.
 .grid .ag-cell-value .ag-cell-wrapper {
   padding-left: calc(var(--ag-indentation-level) * var(--ag-row-group-indent-size) / 3);
 }
-.grid .ag-cell-value.group .ag-group-value {
+.grid .ag-cell-value.group .ag-group-value,
+.grid .ag-cell-value.group {
   font-weight: bold;
 }
 
